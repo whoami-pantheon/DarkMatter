@@ -31,6 +31,12 @@ DarkMatter injects a comprehensive suite of scripts to neutralize hardware-level
 - **AudioContext & Permissions:** Injects noise into audio fingerprinting and patches the Permissions API with realistic 500-2000ms response delays.
 - **CDP Evasion:** Blocks detection via `Runtime.enable` checks, suppresses DevTools console messages, and neutralizes `chrome.devtools` properties.
 - **toString Protection:** Preserves native code strings on wrapped functions to defeat prototype inspection.
+- **Navigator.connection API:** Spoofs `effectiveType`, `rtt`, `downlink` coherent with network jitter settings.
+- **Battery API:** Returns consistent randomized `getBattery()` values (charging state, level, times) per session.
+- **MediaDevices API:** Spoofs `enumerateDevices()` with realistic audio/video input/output devices.
+- **Font Enumeration:** Platform-matched font list (Windows/Mac/Linux) for `document.fonts.check()` responses.
+- **WebGL Extensions:** GPU-matched extension lists (Intel: ~30, AMD: ~33) with proper `getExtension()` mock objects.
+- **Fingerprint Validation:** Automatic consistency checks and auto-correction across viewport, GPU, UA, and hardware specs.
 
 ### 4. Network Jitter & ISP Simulation
 Most bot detectors flag data centers by analyzing the cleanliness of the connection. DarkMatter includes a "Lagos Mode" to simulate residential ISP instability:
@@ -43,11 +49,37 @@ DarkMatter maintains authentication state across sessions:
 - **localStorage Sync:** Per-page localStorage backup and restoration after navigation.
 - **Named Sessions:** Support for multiple session profiles via `--session-name` flag.
 
-### 6. Observability
+### 6. Geographic Identity (GeoProfile)
+Coherent timezone, locale, and language configuration:
+- **18 Curated Profiles:** Pre-built combos (e.g., `Africa/Lagos` + `en-NG`, `America/New_York` + `en-US`) to prevent clock/timezone mismatches.
+- **Auto-Resolution:** Infers locale from timezone and vice versa.
+- **Override Support:** Arbitrary `--timezone` and `--locale` flags with mismatch warnings.
+
+### 7. Proxy Rotation
+- **File-Based Proxies:** Load proxy list from file (`--proxy-file`), one per line.
+- **Rotation:** Round-robin and random selection strategies.
+- **Auth Support:** Parses `protocol://user:pass@host:port` format.
+- **Fallback:** Auto-retries without proxy on connection failure.
+
+### 8. User-Agent Management
+- **Built-in Pool:** 30+ realistic UAs (Chrome 120-128 on Windows/Mac/Linux + Edge).
+- **Viewport Matching:** Auto-selects UA matching GPU vendor and viewport size.
+- **Custom Override:** `--user-agent` flag for exact UA string.
+
+### 9. Observability
 Structured logging for debugging and monitoring:
 - **Configurable Levels:** DEBUG, INFO, WARNING, ERROR via `--log-level` flag.
 - **Dual Output:** Logs to both console and `darkmatter.log` file.
 - **Detailed Metrics:** Viewport selection, session save/load counts, behavior execution times.
+
+### 10. Detection Scoring Suite
+Standalone test runner (`detection_scoring.py`) that scores stealth effectiveness:
+- **bot.sannysoft.com** — Table-based bot detection pass/fail
+- **CreepJS** — Fingerprint integrity and trust score
+- **FingerprintJS** — Visitor ID and confidence parsing
+- **bot.incolumitas.com** — Bot probability scoring
+- **arh.antoinevastel.com** — Headless detection
+- **Output:** Colored terminal summary + JSON report with per-site scores and overall grade (A+ to F).
 
 ---
 
@@ -111,11 +143,21 @@ python DarkMatter.py --mode auto --session-name mysession --log-level DEBUG --ty
 ```
 
 **Available Arguments:**
-- `--mode`: `manual` (record) or `auto` (playback)
-- `--session-name`: Name for session persistence (cookies/localStorage). Default: `default`
-- `--log-level`: Logging verbosity (`DEBUG`, `INFO`, `WARNING`, `ERROR`). Default: `INFO`
-- `--typing-style`: Typing speed profile (`natural`, `fast`, `slow`). Default: `natural`
-- `--channel`: Browser channel (`chrome`, `chrome-beta`, `chrome-dev`, `chrome-canary`, `msedge`, `msedge-beta`, `msedge-dev`, `msedge-canary`). Default: system browser
+
+| Flag | Description | Default |
+|------|-------------|--------|
+| `--mode` | `manual` (record) or `auto` (playback) | `manual` |
+| `--session-name` | Session persistence name | `default` |
+| `--log-level` | `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
+| `--typing-style` | `natural`, `fast`, `slow` | `natural` |
+| `--channel` | Browser channel (e.g. `chrome-beta`, `msedge`) | system |
+| `--headless` | Run in headless mode | `false` |
+| `--url` | Target URL | `https://bot.sannysoft.com` |
+| `--duration` | Recording duration in seconds | `60` |
+| `--proxy-file` | Path to proxy list file | none |
+| `--user-agent` | Custom User-Agent string | auto |
+| `--timezone` | Override timezone (e.g. `America/New_York`) | random |
+| `--locale` | Override locale (e.g. `en-US`) | auto |
 
 **Note:** Using `--channel` requires the corresponding Playwright channel installation:
 ```bash
@@ -123,11 +165,30 @@ playwright install chrome-beta
 playwright install msedge
 ```
 
+### 5. Detection Scoring
+Run the standalone detection test suite to measure stealth effectiveness:
+```bash
+python detection_scoring.py
+python detection_scoring.py --channel chrome-beta --headless
+python detection_scoring.py --proxy-file proxies.txt --timeout-multiplier 2.0
+python detection_scoring.py --output report.json
+```
+The suite tests against 5 detection services and outputs a colored terminal summary with an overall grade (A+ to F), plus a JSON report file.
+
 ## Configuration
 
 The script contains a `NETWORK_JITTER` toggle at the top of the file. 
 - Set `NETWORK_JITTER = True` to enable residential ISP simulation (recommended for high-security targets).
 - Set `NETWORK_JITTER = False` for high-speed, stable automation.
+
+### Proxy File Format
+Create a text file with one proxy per line:
+```
+# Lines starting with # are ignored
+socks5://user:pass@proxy1.example.com:1080
+http://proxy2.example.com:8080
+https://user:pass@proxy3.example.com:443
+```
 
 ---
 
