@@ -73,13 +73,19 @@ Structured logging for debugging and monitoring:
 - **Detailed Metrics:** Viewport selection, session save/load counts, behavior execution times.
 
 ### 10. Detection Scoring Suite
-Standalone test runner (`detection_scoring.py`) that scores stealth effectiveness:
-- **bot.sannysoft.com** — Table-based bot detection pass/fail
-- **CreepJS** — Fingerprint integrity and trust score
-- **FingerprintJS** — Visitor ID and confidence parsing
-- **bot.incolumitas.com** — Bot probability scoring
-- **arh.antoinevastel.com** — Headless detection
-- **Output:** Colored terminal summary + JSON report with per-site scores and overall grade (A+ to F).
+Standalone test runner (`detection_scoring.py`) that scores stealth effectiveness by visiting multiple high-security detection sites sequentially using the full DarkMatter stealth stack.
+- **bot.sannysoft.com** — Detailed table-based bot detection pass/fail verification.
+- **CreepJS** — The "final boss" of fingerprint integrity; scores trust and detects "lies" or "trash" in browser APIs.
+- **FingerprintJS** — Validates stability of visitor IDs and confidence scores.
+- **bot.incolumitas.com** — Analyzes behavioral and environment signals to calculate bot probability.
+- **arh.antoinevastel.com** — Dedicated binary check for headless signatures.
+- **Output:** High-visibility colored terminal summary + detailed JSON report with per-site scores and an overall letter grade (A+ to F).
+
+### 11. Code Readability & Maintenance
+The entire codebase has been extensively annotated with enhanced, informative comments to facilitate transparency and ease of maintenance.
+- **Rationale-Driven:** Comments explain the *why* behind complex biometric and fingerprinting logic.
+- **Implementation Clarity:** Detailed breakdowns of CDP network throttling, JA3 mutation, and synthetic behavior models.
+- **Modern Standards:** Adheres to clear documentation practices while preserving the engine's modular structure.
 
 ---
 
@@ -166,14 +172,23 @@ playwright install msedge
 ```
 
 ### 5. Detection Scoring
-Run the standalone detection test suite to measure stealth effectiveness:
+Run the standalone suite to benchmark your current fingerprint/behavioral profile:
 ```bash
 python detection_scoring.py
-python detection_scoring.py --channel chrome-beta --headless
-python detection_scoring.py --proxy-file proxies.txt --timeout-multiplier 2.0
-python detection_scoring.py --output report.json
 ```
-The suite tests against 5 detection services and outputs a colored terminal summary with an overall grade (A+ to F), plus a JSON report file.
+
+**Scoring Options:**
+
+| Flag | Description | Default |
+|------|-------------|--------|
+| `--channel` | Browser channel to test | system |
+| `--headless` | Run scoring in headless mode | `false` |
+| `--timeout-multiplier` | Multiply default site timeouts (e.g. `2.0` for slow proxies) | `1.0` |
+| `--output` | Path to save JSON report | `detection_report_[timestamp].json` |
+| `--proxy-file` | Proxy list for rotation during tests | none |
+| `--log-level` | `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
+
+The suite outputs a colored summary with an overall grade.
 
 ## Configuration
 
