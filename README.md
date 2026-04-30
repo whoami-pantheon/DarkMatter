@@ -86,9 +86,28 @@ Once you have a profile, run the engine in auto mode. DarkMatter will replay you
 python DarkMatter.py --mode auto
 ```
 
-### 3. Advanced Options
+### 3. Using Different Browser Channels
+DarkMatter can use different Chrome/Edge channels (stable, beta, dev, canary) to vary browser fingerprints:
 ```bash
-python DarkMatter.py --mode auto --session-name mysession --log-level DEBUG --typing-style slow
+# Use Chrome Beta
+python DarkMatter.py --mode auto --channel chrome-beta
+
+# Use Microsoft Edge
+python DarkMatter.py --mode auto --channel msedge
+
+# Combine with other options
+python DarkMatter.py --mode auto --channel chrome-canary --session-name test1
+```
+
+**Note:** Install the channel first via Playwright:
+```bash
+playwright install chrome-beta
+playwright install msedge
+```
+
+### 4. Advanced Options
+```bash
+python DarkMatter.py --mode auto --session-name mysession --log-level DEBUG --typing-style slow --channel chrome-beta
 ```
 
 **Available Arguments:**
@@ -96,6 +115,13 @@ python DarkMatter.py --mode auto --session-name mysession --log-level DEBUG --ty
 - `--session-name`: Name for session persistence (cookies/localStorage). Default: `default`
 - `--log-level`: Logging verbosity (`DEBUG`, `INFO`, `WARNING`, `ERROR`). Default: `INFO`
 - `--typing-style`: Typing speed profile (`natural`, `fast`, `slow`). Default: `natural`
+- `--channel`: Browser channel (`chrome`, `chrome-beta`, `chrome-dev`, `chrome-canary`, `msedge`, `msedge-beta`, `msedge-dev`, `msedge-canary`). Default: system browser
+
+**Note:** Using `--channel` requires the corresponding Playwright channel installation:
+```bash
+playwright install chrome-beta
+playwright install msedge
+```
 
 ## Configuration
 

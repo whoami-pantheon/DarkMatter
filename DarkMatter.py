@@ -551,7 +551,7 @@ async def apply_network_jitter(context):
         'latency': latency
     })
 
-async def launch_stealth_engine(mode="manual", session_name="default", typing_style="natural"):
+async def launch_stealth_engine(mode="manual", session_name="default", typing_style="natural", channel=None):
     # Initialize session manager
     session_mgr = SessionManager()
     
@@ -568,13 +568,14 @@ async def launch_stealth_engine(mode="manual", session_name="default", typing_st
         user_data_dir = "/mnt/chrome-profile"
         # Let Playwright derive its native UA to ensure perfect browser matching 
         # (critical for JS engine signatures)
-        context = await p.chromium.launch_persistent_context(
-            user_data_dir=user_data_dir,
-            headless=False,
-            viewport={'width': viewport_profile['width'], 'height': viewport_profile['height']},
-            timezone_id="Africa/Lagos",
-            locale="en-GB",
-            args=[
+        # Prepare launch options
+        launch_opts = {
+            'user_data_dir': user_data_dir,
+            'headless': False,
+            'viewport': {'width': viewport_profile['width'], 'height': viewport_profile['height']},
+            'timezone_id': "Africa/Lagos",
+            'locale': "en-GB",
+            'args': [
                 "--start-maximized",
                 "--no-sandbox", # User requested to keep
                 "--disable-infobars",
@@ -582,7 +583,14 @@ async def launch_stealth_engine(mode="manual", session_name="default", typing_st
                 "--disable-webrtc", # Prevent WebRTC IP leaks
                 "--cipher-suite-blacklist=0xc02f,0xc02b", # TLS Ja3 Hash Mutation
             ]
-        )
+        }
+        
+        # Add channel if specified (chrome, chrome-beta, chrome-dev, chrome-canary)
+        if channel:
+            launch_opts['channel'] = channel
+            logger.info(f"[CHANNEL] Using Chrome channel: {channel}")
+        
+        context = await p.chromium.launch_persistent_context(**launch_opts)
         
         # Load session cookies if available
         await session_mgr.load_session(context, session_name)
@@ -818,6 +826,7 @@ if __name__ == "__main__":
     parser.add_argument("--session-name", default="default", help="Name for session persistence (cookies/localStorage)")
     parser.add_argument("--log-level", choices=["DEBUG", "INFO", "WARNING", "ERROR"], default="INFO", help="Logging verbosity level")
     parser.add_argument("--typing-style", choices=["natural", "fast", "slow"], default="natural", help="Typing speed profile")
+    parser.add_argument("--channel", choices=["chrome", "chrome-beta", "chrome-dev", "chrome-canary", "msedge", "msedge-beta", "msedge-dev", "msedge-canary"], default=None, help="Browser channel to use (requires Playwright channel installation)")
     args = parser.parse_args()
     
     # Configure logging
@@ -830,4 +839,4 @@ if __name__ == "__main__":
         ]
     )
     
-    asyncio.run(launch_stealth_engine(mode=args.mode, session_name=args.session_name, typing_style=args.typing_style))
+    asyncio.run(launch_stealth_engine(mode=args.mode, session_name=args.session_name, typing_style=args.typing_style, channel=args.channel))
