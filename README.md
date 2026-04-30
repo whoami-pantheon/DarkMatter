@@ -12,23 +12,42 @@ Standard automation is often caught because it is "too perfect." DarkMatter adop
 The heart of DarkMatter is its ability to record and replay high-resolution human interaction profiles.
 - **Millisecond Precision:** Replays mouse movements, clicks, scrolls, and keystrokes with temporal accuracy.
 - **Profile Synchronization:** Captures raw "biometric nodes" during manual sessions to create a reusable behavioral signature (`human_behavior_profile.json`).
+- **Viewport Consistency:** Each profile includes a randomized viewport with matching GPU vendor/renderer (Intel for laptops, AMD for desktops) for cross-signal coherence.
 
 ### 2. HumanLogic (Synthetic Fallback)
 When a recorded trace isn't available, DarkMatter generates synthetic behavior that mimics human imperfections.
 - **Bezier Trajectories:** Mouse movements follow complex cubic bezier curves rather than linear paths, simulating the "wandering" motion of a human hand.
-- **Typing Dynamics:** Simulates varying keystroke speeds and includes "human error" scenarios where the bot occasionally makes a typo and performs a backspace correction.
+- **Advanced Typing Dynamics:** Adjacent-key typo simulation using QWERTY layout, variable typing speed per key difficulty (easy/hard keys), realistic shift key handling, and think-time pauses after punctuation.
 - **Hesitation Modeling:** Incorporates Gaussian-distributed pauses before interactions (e.g., hovering before clicking).
+- **Scroll Simulation:** Variable-speed scrolling with reading pauses and content-density-based timing.
+- **Tab Switching:** Simulates Alt+Tab away-and-back behavior with configurable duration.
+- **Reading Pauses:** Duration calculated from text word count (200-250 WPM) for realistic content consumption.
+- **Inactivity Patterns:** Brief cursor freezes and extended "coffee break" pauses to simulate user absence.
 
 ### 3. Deep Fingerprint Masking
 DarkMatter injects a comprehensive suite of scripts to neutralize hardware-level identification:
-- **WebGL & Canvas Noise:** Spoofs GPU renderers (Intel/AMD) and adds microscopic noise to canvas signatures to prevent hash-based tracking.
-- **API Shielding:** Masks `navigator.webdriver`, spoofs `hardwareConcurrency` and `deviceMemory`, and simulates a plausible plugin array.
-- **AudioContext & Permissions:** Injects noise into audio fingerprinting and patches the Permissions API to appear as a standard desktop browser.
+- **WebGL & Canvas Noise:** Spoofs GPU renderers (Intel/AMD) matched to viewport profile and adds microscopic noise to canvas signatures to prevent hash-based tracking.
+- **API Shielding:** Masks `navigator.webdriver` via prototype chain (iframe traversal protection), spoofs `hardwareConcurrency` and `deviceMemory` per viewport, and simulates a plausible plugin array.
+- **AudioContext & Permissions:** Injects noise into audio fingerprinting and patches the Permissions API with realistic 500-2000ms response delays.
+- **CDP Evasion:** Blocks detection via `Runtime.enable` checks, suppresses DevTools console messages, and neutralizes `chrome.devtools` properties.
+- **toString Protection:** Preserves native code strings on wrapped functions to defeat prototype inspection.
 
 ### 4. Network Jitter & ISP Simulation
 Most bot detectors flag data centers by analyzing the cleanliness of the connection. DarkMatter includes a "Lagos Mode" to simulate residential ISP instability:
 - **Packet-Level Jitter:** Uses the Chrome DevTools Protocol (CDP) to inject latency spikes and bandwidth throttling.
 - **TLS JA3 Mutation:** Blacklists certain cipher suites to alter the TLS handshake fingerprint, a common signal used by advanced WAFs (Web Application Firewalls).
+
+### 5. Session Persistence
+DarkMatter maintains authentication state across sessions:
+- **Cookie Management:** Automatically saves and restores cookies with deduplication.
+- **localStorage Sync:** Per-page localStorage backup and restoration after navigation.
+- **Named Sessions:** Support for multiple session profiles via `--session-name` flag.
+
+### 6. Observability
+Structured logging for debugging and monitoring:
+- **Configurable Levels:** DEBUG, INFO, WARNING, ERROR via `--log-level` flag.
+- **Dual Output:** Logs to both console and `darkmatter.log` file.
+- **Detailed Metrics:** Viewport selection, session save/load counts, behavior execution times.
 
 ---
 
@@ -59,13 +78,24 @@ To create a "Ghost Profile," run the engine in manual mode. A browser window wil
 ```bash
 python DarkMatter.py --mode manual
 ```
-The session will be saved to `human_behavior_profile.json`.
+The session will be saved to `human_behavior_profile.json` with an associated viewport profile.
 
 ### 2. Running Automated Tasks
 Once you have a profile, run the engine in auto mode. DarkMatter will replay your recorded movements to establish a high-trust session before proceeding.
 ```bash
 python DarkMatter.py --mode auto
 ```
+
+### 3. Advanced Options
+```bash
+python DarkMatter.py --mode auto --session-name mysession --log-level DEBUG --typing-style slow
+```
+
+**Available Arguments:**
+- `--mode`: `manual` (record) or `auto` (playback)
+- `--session-name`: Name for session persistence (cookies/localStorage). Default: `default`
+- `--log-level`: Logging verbosity (`DEBUG`, `INFO`, `WARNING`, `ERROR`). Default: `INFO`
+- `--typing-style`: Typing speed profile (`natural`, `fast`, `slow`). Default: `natural`
 
 ## Configuration
 
